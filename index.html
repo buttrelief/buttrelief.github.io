@@ -1,0 +1,145 @@
+﻿<!doctype html>
+<title>JSNES</title>
+<style>
+body {
+  font: 14px Arial;
+  background:#fff;
+}
+canvas {
+  background: #000;
+}
+#screen {
+  width:512px;
+  height:480px;
+  image-rendering: pixelated; /* webkit */
+  image-rendering: optimizespeed; /* firefox */
+}
+</style>
+<canvas id="screen" width="256" height="240"></canvas>
+<p>
+<button id="b_connect">Connect</button>
+<button id="b_disconnect">Disonnect</button>
+<span id="s_fps"></span>
+<p>
+<button id="b_load">Load</button>
+<select id="i_file_id"></select>
+<select id="i_frame_rate">
+<option value="40">40 FPS</option>
+<option value="45">45 FPS</option>
+<option value="50">50 FPS</option>
+<option value="55">55 FPS</option>
+<option value="60">60 FPS</option>
+</select>
+<p>
+<button id="b_pause">Pause</button>
+<button id="b_resume">Resume</button>
+<button id="b_reload">Reload</button>
+<button id="b_close">Close</button>
+<p>
+<button id="b_mute">Mute</button>
+<button id="b_unmute">Unmute</button>
+<input id="i_ctrl_1p" name="i_ctrl" type="radio" value="1" checked>1P
+<input id="i_ctrl_2p" name="i_ctrl" type="radio" value="2">2P
+
+<script src="./js/jsnes/1.2.1/dist/jsnes.js"></script>
+<script type="module">
+import config from "./config.js";
+import Emulator from "./src/Emulator.js";
+
+const KEYS = {
+  90: [1, jsnes.Controller.BUTTON_A, "Z"], // Z
+  88: [1, jsnes.Controller.BUTTON_B, "X"], // X
+  32: [1, jsnes.Controller.BUTTON_SELECT, "Space"], // Space
+  13: [1, jsnes.Controller.BUTTON_START, "Enter"], // Enter
+  38: [1, jsnes.Controller.BUTTON_UP, "Up"], // Up
+  40: [1, jsnes.Controller.BUTTON_DOWN, "Down"], // Down
+  37: [1, jsnes.Controller.BUTTON_LEFT, "Left"], // Left
+  39: [1, jsnes.Controller.BUTTON_RIGHT, "Right"], // Right
+  103: [2, jsnes.Controller.BUTTON_A, "Num-7"], // Num-7
+  105: [2, jsnes.Controller.BUTTON_B, "Num-9"], // Num-9
+  99: [2, jsnes.Controller.BUTTON_SELECT, "Num-3"], // Num-3
+  97: [2, jsnes.Controller.BUTTON_START, "Num-1"], // Num-1
+  104: [2, jsnes.Controller.BUTTON_UP, "Num-8"], // Num-8
+  98: [2, jsnes.Controller.BUTTON_DOWN, "Num-2"], // Num-2
+  100: [2, jsnes.Controller.BUTTON_LEFT, "Num-4"], // Num-4
+  102: [2, jsnes.Controller.BUTTON_RIGHT, "Num-6"] // Num-6
+};
+
+const CANVAS_ID = "screen";
+
+let emulator = null, fpsInterval = null;
+
+const init = () => {
+  let html = '', i = 0;
+  for (let filename in config.roms) {
+    html += '<option value="' + (++i) +'">' + (filename) +'</option>';
+  }
+  i_file_id.innerHTML = html;
+}
+
+const getEmulator = () => {
+  if (!emulator) {
+    let options = config;
+    options.keys = KEYS;
+    options.canvas = document.getElementById(CANVAS_ID);
+    let params = (new URL(document.location)).searchParams;
+    let serverUrl = params.get('url');
+    if (serverUrl) options.serverUrl = serverUrl;
+    emulator = new Emulator(options);
+  }
+  return emulator;
+};
+
+init();
+
+b_connect.onclick = () => {
+  getEmulator().connect(1);
+};
+
+b_disconnect.onclick = () => {
+  getEmulator().disconnect();
+};
+
+b_load.onclick = () => {
+  getEmulator().frameRate = Number(i_frame_rate.value);
+  getEmulator().loadFile(Number(i_file_id.value));
+};
+
+b_resume.onclick = () => {
+  getEmulator().frameRate = Number(i_frame_rate.value);
+  getEmulator().start();
+};
+
+b_pause.onclick = () => {
+  getEmulator().stop();
+};
+
+b_reload.onclick = () => {
+  getEmulator().reload();
+};
+
+b_close.onclick = () => {
+  getEmulator().close();
+};
+
+b_mute.onclick = () => {
+  getEmulator().mute();
+};
+
+b_unmute.onclick = () => {
+  getEmulator().unmute();
+};
+
+i_ctrl_1p.onclick = () => {
+  getEmulator().keyboardController.switchControllers = false;
+};
+
+i_ctrl_2p.onclick = () => {
+  getEmulator().keyboardController.switchControllers = true;
+};
+
+fpsInterval = setInterval(() => {
+  s_fps.innerText = `FPS: ${parseInt(getEmulator().getFPS())}, Room: ${getEmulator().roomId}, ID: ${getEmulator().playerId}`;
+}, 1000);
+
+</script>
